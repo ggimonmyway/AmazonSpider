@@ -1,0 +1,68 @@
+import pymysql
+from  AmazonCrapy import settings
+
+
+db = pymysql.connect(settings.MYSQL_HOST, settings.MYSQL_USER, settings.MYSQL_PASSWORD, settings.MYSQL_DB, charset=settings.MYSQL_CHARSET, cursorclass=pymysql.cursors.DictCursor)
+cursor = db.cursor()
+
+
+class Sql:
+
+    asin_pool = []
+
+    @classmethod
+    def insert_cate_log(cls, item):
+        sql = "INSERT INTO py_cates (title,link,level,pid) VALUES ('%s', '%s','%d','%d')" % (item['title'],item['link'],item['level'],item['pid'])
+        try:
+            cursor.execute(sql)
+            db.commit()
+        except:
+            db.rollback()
+        pass
+
+    @classmethod
+    def clear_cate(cls, level):
+        sql = "truncate table py_cates"
+        try:
+            cursor.execute(sql)
+            db.commit()
+        except:
+            db.rollback()
+        pass
+
+    @classmethod
+    def cache_best_asin(cls, item):
+        # cls.asin_pool.append((item['asin'], item['cid'], item['rank']))
+        cls.asin_pool.append((item['name'], item['star'], item['sellnum'],item['price'],item['imgurl']))
+        pass
+
+    @classmethod
+    def store_best_asin(cls):
+        # sql_clear = "truncate table py_asin_best"
+        # sql = "INSERT INTO py_asin_best (asin,cid,rank) VALUES (%s, %s, %s)"
+        sql_clear = "truncate table py_asin_best2"
+        sql = "INSERT INTO py_asin_best2 (name,star,sellnum,price,imgurl) VALUES (%s, %s, %s, %s, %s)"
+        try:
+            cursor.execute(sql_clear)
+            cursor.executemany(sql,cls.asin_pool)
+            db.commit()
+        except Exception as err:
+            print(err)
+            db.rollback()
+        pass
+
+    @classmethod
+    def findall_cate_level1(cls):
+        sql = "SELECT id,link FROM py_cates WHERE level < 2"
+        cursor.execute(sql)
+        return cursor.fetchall()
+
+    @classmethod
+    def findall_asin_level1(cls):
+        sql = "SELECT distinct(asin), cid FROM py_asin_best limit 0,300"
+        cursor.execute(sql)
+        return cursor.fetchall()
+
+
+
+
